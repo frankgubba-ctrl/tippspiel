@@ -72,7 +72,14 @@ Damit das Login funktioniert, musst du zwei Geheimwörter hinterlegen:
 
    **Punkte pro Spiel:** 4 = exaktes Ergebnis · 3 = richtige Tordifferenz ·
    2 = richtige Tendenz (Sieger/Unentschieden) · 0 = daneben.
-   Die Spiele sind nach **Spieltag 1/2/3** und Gruppe sortiert.
+   Die Spiele sind nach **Gruppe A–L** sortiert; oben wählt ihr die Gruppe.
+
+   **Echte Ergebnisse & Zeiten:** Spielplan, Anstoßzeiten (in isländischer Zeit)
+   und Endergebnisse werden automatisch aus der öffentlichen, gemeinfreien Quelle
+   *openfootball* geladen. Sobald ein Spiel dort ein Ergebnis hat, rechnet die App
+   die Punkte automatisch. Falls die Quelle mal hinterherhängt, kann **Papa** im
+   Spielleiter-Modus (Tab „Regeln" → „Spielleiter-Modus an") jedes Ergebnis im
+   Spiele-Tab manuell überschreiben (mit ✏️ markiert).
 4. **Papa** sieht unter **Regeln** zusätzlich den Knopf **"Ergebnisse eintragen"** —
    damit trägst du nach den Spielen die echten Resultate ein, und die Punkte
    werden automatisch berechnet.

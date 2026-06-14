@@ -21,17 +21,11 @@
   .tab{padding:8px 14px;border-radius:10px;border:none;cursor:pointer;font-weight:700;font-size:14px;
     background:var(--line);color:var(--sub);transition:all .15s}
   .tab.active{background:var(--accent);color:#0a1a2f}
-  .row{display:flex;align-items:center;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--line)}
-  .rankbtn{width:30px;height:30px;border-radius:8px;border:none;cursor:pointer;font-weight:800;font-size:13px;
-    background:var(--line);color:var(--sub)}
-  .rankbtn.top{background:var(--win);color:#fff}
-  .rankbtn.low{background:var(--accent2);color:#fff}
   select,input{width:100%;padding:12px;border-radius:10px;background:var(--line);color:var(--text);
     border:none;font-size:15px}
   .big{font-size:30px;font-weight:900;color:var(--accent)}
   .label{color:var(--sub);font-size:13px;font-weight:600}
   .save{font-size:11px;font-weight:600;margin-top:6px}
-  .hidden{display:none}
   .pillbtn{flex:1;padding:10px;border-radius:10px;border:none;cursor:pointer;font-weight:800;font-size:15px;
     background:var(--line);color:var(--sub)}
   .pillbtn.active{background:var(--accent);color:#0a1a2f}
@@ -40,22 +34,25 @@
   .primary{width:100%;padding:14px;border-radius:12px;border:none;cursor:pointer;
     font-weight:800;font-size:16px;background:var(--accent);color:#0a1a2f;margin-top:12px}
   .err{color:#ffb3b3;font-size:13px;margin-top:8px;min-height:18px}
-  /* Spiel-Zeile */
-  .match{display:flex;align-items:center;gap:8px;padding:10px 0;border-bottom:1px solid var(--line)}
+  .match{padding:10px 0;border-bottom:1px solid var(--line)}
+  .matchtop{display:flex;align-items:center;gap:8px}
   .team-h{flex:1;text-align:right;font-size:14px}
   .team-a{flex:1;text-align:left;font-size:14px}
   .scorein{width:46px;min-width:46px;text-align:center;padding:10px 4px;font-size:17px;font-weight:800}
   .vs{color:var(--sub);font-size:12px}
+  .meta{font-size:11px;color:var(--sub);text-align:center;margin-bottom:4px}
   .pts{font-size:11px;font-weight:700;margin-left:6px;padding:2px 6px;border-radius:6px}
   .pts.hit4{background:var(--win);color:#062}
   .pts.hit3{background:#3a8;color:#fff}
   .pts.hit2{background:var(--accent2);color:#fff}
   .pts.hit0{background:var(--line);color:var(--sub)}
-  .matchday-nav{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px;justify-content:center}
-  .mdbtn{padding:7px 11px;border-radius:9px;border:none;cursor:pointer;font-weight:700;font-size:13px;
+  .res{font-size:11px;color:var(--sub);text-align:center;margin-top:3px}
+  .res b{color:var(--text)}
+  .grpnav{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:14px;justify-content:center}
+  .gbtn{width:34px;height:34px;border-radius:9px;border:none;cursor:pointer;font-weight:800;font-size:14px;
     background:var(--line);color:var(--sub)}
-  .mdbtn.active{background:var(--accent);color:#0a1a2f}
-  .res{font-size:11px;color:var(--sub);text-align:center;margin-top:2px}
+  .gbtn.active{background:var(--accent);color:#0a1a2f}
+  .override{font-size:11px;color:var(--accent);text-align:center;margin-top:3px;cursor:pointer;text-decoration:underline}
 </style>
 </head>
 <body>
@@ -63,24 +60,10 @@
 
 <script>
 // ─────────────────────────────────────────────────────────────
-//  DATEN
+//  STATISCHE DATEN (Extras)
 // ─────────────────────────────────────────────────────────────
-const GROUPS = {
-  A:["Mexiko","Südkorea","Südafrika","Tschechien"],
-  B:["Kanada","Schweiz","Katar","Bosnien-Herzegowina"],
-  C:["Brasilien","Marokko","Schottland","Haiti"],
-  D:["USA","Australien","Türkei","Paraguay"],
-  E:["Deutschland","Ecuador","Elfenbeinküste","Curaçao"],
-  F:["Niederlande","Japan","Schweden","Tunesien"],
-  G:["Belgien","Iran","Ägypten","Neuseeland"],
-  H:["Spanien","Uruguay","Saudi-Arabien","Kap Verde"],
-  I:["Frankreich","Senegal","Norwegen","Irak"],
-  J:["Argentinien","Österreich","Algerien","Jordanien"],
-  K:["Portugal","Kolumbien","Usbekistan","DR Kongo"],
-  L:["England","Kroatien","Ghana","Curaçao"],
-};
-const FLAG={Mexiko:"🇲🇽",Südkorea:"🇰🇷",Südafrika:"🇿🇦",Tschechien:"🇨🇿",Kanada:"🇨🇦",Schweiz:"🇨🇭",Katar:"🇶🇦","Bosnien-Herzegowina":"🇧🇦",Brasilien:"🇧🇷",Marokko:"🇲🇦",Schottland:"🏴󠁧󠁢󠁳󠁣󠁴󠁿",Haiti:"🇭🇹",USA:"🇺🇸",Australien:"🇦🇺",Türkei:"🇹🇷",Paraguay:"🇵🇾",Deutschland:"🇩🇪",Ecuador:"🇪🇨",Elfenbeinküste:"🇨🇮",Curaçao:"🇨🇼",Niederlande:"🇳🇱",Japan:"🇯🇵",Schweden:"🇸🇪",Tunesien:"🇹🇳",Belgien:"🇧🇪",Iran:"🇮🇷",Ägypten:"🇪🇬",Neuseeland:"🇳🇿",Spanien:"🇪🇸",Uruguay:"🇺🇾","Saudi-Arabien":"🇸🇦","Kap Verde":"🇨🇻",Frankreich:"🇫🇷",Senegal:"🇸🇳",Norwegen:"🇳🇴",Irak:"🇮🇶",Argentinien:"🇦🇷",Österreich:"🇦🇹",Algerien:"🇩🇿",Jordanien:"🇯🇴",Portugal:"🇵🇹",Kolumbien:"🇨🇴",Usbekistan:"🇺🇿","DR Kongo":"🇨🇩",England:"🏴󠁧󠁢󠁥󠁮󠁧󠁿",Kroatien:"🇭🇷",Ghana:"🇬🇭"};
-const ALL_TEAMS=[...new Set(Object.values(GROUPS).flat())].sort();
+const ALL_TEAMS=["Algerien","Argentinien","Australien","Belgien","Bosnien-Herz.","Brasilien","Curaçao","DR Kongo","Deutschland","Ecuador","Elfenbeinküste","England","Frankreich","Ghana","Haiti","Iran","Irak","Japan","Jordanien","Kanada","Kap Verde","Katar","Kolumbien","Kroatien","Marokko","Mexiko","Neuseeland","Niederlande","Norwegen","Panama","Paraguay","Portugal","Saudi-Arabien","Schottland","Schweden","Schweiz","Senegal","Spanien","Südafrika","Südkorea","Tschechien","Tunesien","Türkei","USA","Uruguay","Usbekistan","Ägypten","Österreich"];
+const FLAG={"Algerien":"🇩🇿","Argentinien":"🇦🇷","Australien":"🇦🇺","Belgien":"🇧🇪","Bosnien-Herz.":"🇧🇦","Brasilien":"🇧🇷","Curaçao":"🇨🇼","DR Kongo":"🇨🇩","Deutschland":"🇩🇪","Ecuador":"🇪🇨","Elfenbeinküste":"🇨🇮","England":"🏴󠁧󠁢󠁥󠁮󠁧󠁿","Frankreich":"🇫🇷","Ghana":"🇬🇭","Haiti":"🇭🇹","Iran":"🇮🇷","Irak":"🇮🇶","Japan":"🇯🇵","Jordanien":"🇯🇴","Kanada":"🇨🇦","Kap Verde":"🇨🇻","Katar":"🇶🇦","Kolumbien":"🇨🇴","Kroatien":"🇭🇷","Marokko":"🇲🇦","Mexiko":"🇲🇽","Neuseeland":"🇳🇿","Niederlande":"🇳🇱","Norwegen":"🇳🇴","Panama":"🇵🇦","Paraguay":"🇵🇾","Portugal":"🇵🇹","Saudi-Arabien":"🇸🇦","Schottland":"🏴󠁧󠁢󠁳󠁣󠁴󠁿","Schweden":"🇸🇪","Schweiz":"🇨🇭","Senegal":"🇸🇳","Spanien":"🇪🇸","Südafrika":"🇿🇦","Südkorea":"🇰🇷","Tschechien":"🇨🇿","Tunesien":"🇹🇳","Türkei":"🇹🇷","USA":"🇺🇸","Uruguay":"🇺🇾","Usbekistan":"🇺🇿","Ägypten":"🇪🇬","Österreich":"🇦🇹"};
 const FUN=[
   {id:"f1",q:"Welches Team kassiert das erste Eigentor des Turniers? 🤦",type:"team"},
   {id:"f2",q:"Wie viele rote Karten gibt es im Finale? 🟥",type:"number"},
@@ -94,51 +77,45 @@ const FUN=[
   {id:"f10",q:"Welche Nationalhymne wird am lautesten mitgesungen? 🎵",type:"team"},
 ];
 
-// ── Spielplan automatisch erzeugen ────────────────────────────
-// In jeder 4er-Gruppe spielt jeder gegen jeden = 6 Spiele.
-// Reihenfolge der Paarungen pro Spieltag (Standard-Turnierschema):
-//   Spieltag 1: 1-2, 3-4
-//   Spieltag 2: 1-3, 4-2   (bzw. 2-4)
-//   Spieltag 3: 4-1, 2-3   (bzw. 1-4)
-const PAIRINGS=[ [[0,1],[2,3]], [[0,2],[3,1]], [[3,0],[1,2]] ];
-const MATCHES=[];  // {id, group, day, home, away}
-Object.keys(GROUPS).forEach(g=>{
-  const t=GROUPS[g];
-  PAIRINGS.forEach((day,di)=>{
-    day.forEach(([h,a])=>{
-      MATCHES.push({
-        id:`${g}_${di+1}_${t[h]}_${t[a]}`.replace(/\s/g,""),
-        group:g, day:di+1, home:t[h], away:t[a]
-      });
-    });
-  });
-});
-// Nach Spieltag gruppieren
-const MATCHDAYS={1:[],2:[],3:[]};
-MATCHES.forEach(m=>MATCHDAYS[m.day].push(m));
-
 // ─────────────────────────────────────────────────────────────
 //  ZUSTAND
 // ─────────────────────────────────────────────────────────────
 let me=null, secret="", tab="spiele", viewPlayer="Papa", adminMode=false, saveTimer=null;
-let curDay=1;
-let state={ tips:{}, results:{} };
-const API="/api/tipps";
+let curGroup="A";
+let state={ tips:{}, results:{} };   // results.overrides[id]={h,a} (Papa), results.champion, ...
+let SCHEDULE=[];                      // live geladen
+let scheduleErr="";
+const API="/api/tipps", SCHED="/api/schedule";
 
 function myTips(){
-  if(!state.tips[me]) state.tips[me]={matchTips:{},groupTips:{},championTip:"",topScorer:"",funTips:{}};
+  if(!state.tips[me]) state.tips[me]={matchTips:{},championTip:"",topScorer:"",funTips:{}};
   if(!state.tips[me].matchTips) state.tips[me].matchTips={};
+  if(!state.tips[me].funTips) state.tips[me].funTips={};
   return state.tips[me];
+}
+// Das tatsächliche Ergebnis: Papas Override hat Vorrang, sonst das automatische aus der Quelle
+function realResult(m){
+  const ov=state.results.overrides?.[m.id];
+  if(ov && ov.h!=="" && ov.a!=="" && ov.h!=null && ov.a!=null) return {h:+ov.h,a:+ov.a,src:"override"};
+  if(m.result) return {h:m.result.h,a:m.result.a,src:"auto"};
+  return null;
 }
 
 // ─────────────────────────────────────────────────────────────
 //  SERVER
 // ─────────────────────────────────────────────────────────────
 async function loadState(){
-  try{
-    const r=await fetch(API); state=await r.json();
+  try{const r=await fetch(API);state=await r.json();
     if(!state.tips)state.tips={}; if(!state.results)state.results={};
+    if(!state.results.overrides)state.results.overrides={};
   }catch(e){console.error(e);}
+}
+async function loadSchedule(){
+  try{
+    const r=await fetch(SCHED); const d=await r.json();
+    if(d.matches&&d.matches.length){SCHEDULE=d.matches;scheduleErr="";}
+    else {scheduleErr="Spielplan konnte nicht geladen werden.";}
+  }catch(e){scheduleErr="Spielplan konnte nicht geladen werden.";console.error(e);}
 }
 let saving=false;
 async function saveTips(){
@@ -156,30 +133,26 @@ async function saveResults(){
 function queueSave(fn){clearTimeout(saveTimer);saveTimer=setTimeout(fn,500);}
 
 // ─────────────────────────────────────────────────────────────
-//  PUNKTE
+//  PUNKTE  (4 exakt / 3 Differenz / 2 Tendenz)
 // ─────────────────────────────────────────────────────────────
-// Einzelspiel: exakt = 4, richtige Tordifferenz = 3, richtige Tendenz = 2
 function matchPoints(tip, real){
   if(!tip||!real)return null;
-  if(tip.h===""||tip.a===""||real.h===""||real.a===""||
-     tip.h==null||tip.a==null||real.h==null||real.a==null) return null;
-  const th=+tip.h, ta=+tip.a, rh=+real.h, ra=+real.a;
+  if(tip.h===""||tip.a===""||tip.h==null||tip.a==null)return null;
+  const th=+tip.h,ta=+tip.a,rh=+real.h,ra=+real.a;
   if([th,ta,rh,ra].some(isNaN))return null;
-  if(th===rh&&ta===ra)return 4;                       // exakt
-  if((th-ta)===(rh-ra))return 3;                      // gleiche Differenz (inkl. Unentschieden gleicher Höhe)
-  const sign=x=>x>0?1:x<0?-1:0;
-  if(sign(th-ta)===sign(rh-ra))return 2;              // gleiche Tendenz
+  if(th===rh&&ta===ra)return 4;
+  if((th-ta)===(rh-ra))return 3;
+  const s=x=>x>0?1:x<0?-1:0;
+  if(s(th-ta)===s(rh-ra))return 2;
   return 0;
 }
 function score(player){
   const t=state.tips[player]; if(!t)return 0;
   let pts=0;
-  // Einzelspiele
-  MATCHES.forEach(m=>{
-    const p=matchPoints(t.matchTips?.[m.id], state.results.matches?.[m.id]);
+  SCHEDULE.forEach(m=>{
+    const p=matchPoints(t.matchTips?.[m.id], realResult(m));
     if(p!=null)pts+=p;
   });
-  // Spezial
   if(state.results.champion&&t.championTip===state.results.champion)pts+=10;
   if(state.results.topScorer&&t.topScorer&&
      t.topScorer.toLowerCase().trim()===state.results.topScorer.toLowerCase().trim())pts+=8;
@@ -212,10 +185,12 @@ function renderLogin(err=""){
 async function doLogin(){
   me=document.getElementById("who").value;
   secret=document.getElementById("pw").value;
+  app().innerHTML='<div class="center" style="margin-top:80px;color:var(--sub)">⚽ Lade Spielplan & Tipps…</div>';
   await loadState();
   const test=await fetch(API,{method:"POST",headers:{"Content-Type":"application/json"},
     body:JSON.stringify({player:me,secret,tips:myTips()})});
   if(test.status===401){renderLogin("Falsches Geheimwort. Nochmal versuchen.");return;}
+  await loadSchedule();
   viewPlayer=me; renderApp();
 }
 function renderSaveStatus(){
@@ -228,7 +203,7 @@ function renderApp(){
   <div class="center" style="margin-bottom:18px">
     <div class="title">⚽ WM 2026</div>
     <div class="gold" style="font-weight:800;font-size:18px;margin-top:-4px">Tippspiel</div>
-    <div class="sub" style="margin-top:4px">Angemeldet als ${me==="Papa"?"👨 Papa":"👧 Elisa"} · 11. Juni – 19. Juli</div>
+    <div class="sub" style="margin-top:4px">Angemeldet als ${me==="Papa"?"👨 Papa":"👧 Elisa"} · Zeiten in 🇮🇸 isländischer Zeit</div>
     <div class="save" id="savestatus">✅ gespeichert</div>
   </div>
   <div class="card" style="display:flex;justify-content:space-around;text-align:center">
@@ -245,7 +220,7 @@ function renderApp(){
 }
 function setTab(t){tab=t;renderApp();}
 function setView(p){viewPlayer=p;renderContent();}
-function setDay(d){curDay=d;renderContent();}
+function setGroup(g){curGroup=g;renderContent();}
 
 function playerSwitch(){
   return `<div style="display:flex;gap:8px;margin-bottom:14px">
@@ -253,40 +228,50 @@ function playerSwitch(){
       ${p==="Papa"?"👨 ":"👧 "}${p}</button>`).join("")}
   </div>`;
 }
+function groupNav(){
+  const groups=[...new Set(SCHEDULE.map(m=>m.group))].sort();
+  return `<div class="grpnav">${groups.map(g=>
+    `<button class="gbtn ${curGroup===g?"active":""}" onclick="setGroup('${g}')">${g}</button>`).join("")}</div>`;
+}
 
 function renderContent(){
   const c=document.getElementById("content"); if(!c)return;
   const readonly=viewPlayer!==me;
 
   if(tab==="spiele"){
+    if(scheduleErr){c.innerHTML=`<div class="card"><div style="color:#ffb3b3">${scheduleErr}</div>
+      <div class="sub" style="margin-top:8px">Bitte später neu laden. Deine bisherigen Tipps sind gespeichert.</div></div>`;return;}
     const t=state.tips[viewPlayer]||{};
-    c.innerHTML=playerSwitch()+`
-      <div class="matchday-nav">
-        ${[1,2,3].map(d=>`<button class="mdbtn ${curDay===d?"active":""}" onclick="setDay(${d})">Spieltag ${d}</button>`).join("")}
-      </div>`+
-      // nach Gruppen innerhalb des Spieltags
-      Object.keys(GROUPS).map(g=>{
-        const ms=MATCHDAYS[curDay].filter(m=>m.group===g);
-        return `<div class="card"><div style="font-weight:800;margin-bottom:6px;font-size:15px">Gruppe ${g}</div>
-        ${ms.map(m=>{
-          const tip=t.matchTips?.[m.id]||{h:"",a:""};
-          const real=state.results.matches?.[m.id];
-          const p=matchPoints(t.matchTips?.[m.id],real);
-          const pill = real ? (p!=null?`<span class="pts hit${p}">${p} Pkt</span>`:"") : "";
-          const resline = real ? `<div class="res">Endstand: ${real.h}:${real.a} ${pill}</div>` : "";
-          return `<div>
-            <div class="match">
-              <span class="team-h">${m.home} ${FLAG[m.home]||""}</span>
-              <input class="scorein" type="number" min="0" inputmode="numeric" value="${tip.h}"
-                ${readonly?"disabled":""} oninput="setScore('${m.id}','h',this.value)">
-              <span class="vs">:</span>
-              <input class="scorein" type="number" min="0" inputmode="numeric" value="${tip.a}"
-                ${readonly?"disabled":""} oninput="setScore('${m.id}','a',this.value)">
-              <span class="team-a">${FLAG[m.away]||""} ${m.away}</span>
-            </div>${resline}
-          </div>`;
-        }).join("")}</div>`;
-      }).join("");
+    const ms=SCHEDULE.filter(m=>m.group===curGroup);
+    c.innerHTML=playerSwitch()+groupNav()+`<div class="card">
+      <div style="font-weight:800;margin-bottom:6px;font-size:16px">Gruppe ${curGroup}</div>
+      ${ms.map(m=>{
+        const tip=t.matchTips?.[m.id]||{h:"",a:""};
+        const real=realResult(m);
+        const p=matchPoints(t.matchTips?.[m.id],real);
+        const pill=real&&p!=null?`<span class="pts hit${p}">${p} Pkt</span>`:"";
+        let resline="";
+        if(real){
+          const tag=real.src==="override"?" ✏️":"";
+          resline=`<div class="res">Endstand: <b>${real.h}:${real.a}</b>${tag} ${pill}</div>`;
+        }
+        return `<div class="match">
+          <div class="meta">${m.date} · ${m.time}${m.ground?" · "+m.ground:""}</div>
+          <div class="matchtop">
+            <span class="team-h">${m.home} ${m.homeFlag}</span>
+            <input class="scorein" type="number" min="0" inputmode="numeric" value="${tip.h}"
+              ${readonly?"disabled":""} oninput="setScore('${m.id}','h',this.value)">
+            <span class="vs">:</span>
+            <input class="scorein" type="number" min="0" inputmode="numeric" value="${tip.a}"
+              ${readonly?"disabled":""} oninput="setScore('${m.id}','a',this.value)">
+            <span class="team-a">${m.awayFlag} ${m.away}</span>
+          </div>
+          ${resline}
+          ${me==="Papa"&&adminMode?`<div class="override" onclick="promptOverride('${m.id}')">Ergebnis manuell setzen/ändern</div>`:""}
+        </div>`;
+      }).join("")}
+    </div>
+    <div class="sub center" style="margin-top:-6px">Ergebnisse werden automatisch von openfootball geladen. ✏️ = von Papa manuell gesetzt.</div>`;
   }
 
   if(tab==="spezial"){
@@ -322,16 +307,17 @@ function renderContent(){
     c.innerHTML=`<div class="card">
       <div style="font-weight:800;margin-bottom:12px;font-size:17px">📖 So funktioniert's</div>
       ${[
-        ["⚽ Spiele tippen","Tippe für jedes Spiel das genaue Ergebnis. <b>4 Punkte</b> für das exakte Ergebnis, <b>3 Punkte</b> für die richtige Tordifferenz, <b>2 Punkte</b> für die richtige Tendenz (Sieger/Unentschieden)."],
+        ["⚽ Spiele tippen","Tippe für jedes Spiel das genaue Ergebnis. <b>4 Punkte</b> exakt · <b>3</b> richtige Tordifferenz · <b>2</b> richtige Tendenz."],
+        ["🔄 Echte Ergebnisse","Die Ergebnisse werden automatisch aus einer öffentlichen Quelle (openfootball) geladen. Datum/Uhrzeit in isländischer Zeit."],
         ["🏆 Weltmeister","10 Punkte für den richtigen Sieger."],
         ["👟 Torschützenkönig","8 Punkte für den treffsichersten Spieler."],
         ["😂 Lustige Fragen","Je 5 Punkte — hier zählt vor allem der Spaß."],
         ["🔒 Getrennt & sicher","Jeder bearbeitet nur seine eigenen Felder. Die Tipps des anderen kannst du ansehen, aber nicht ändern."],
-        ["⚖️ Spielleiter","Papa trägt nach den Spielen die echten Ergebnisse ein. Dann rechnet die App automatisch."],
+        ["✏️ Papa als Spielleiter","Falls die automatische Quelle mal hinterherhängt, kann Papa jedes Ergebnis manuell überschreiben."],
       ].map(([t,d])=>`<div style="margin-bottom:14px"><div style="font-weight:700;color:var(--accent)">${t}</div>
         <div class="sub" style="font-size:14px;line-height:1.5">${d}</div></div>`).join("")}
       ${me==="Papa"?`<button class="tab ${adminMode?"active":""}" onclick="toggleAdmin()">
-        ${adminMode?"🔒 Spielleiter-Modus aus":"🔓 Ergebnisse eintragen"}</button>
+        ${adminMode?"🔒 Spielleiter-Modus aus":"🔓 Spielleiter-Modus an (Ergebnisse & Extras)"}</button>
         <div id="admin">${adminMode?adminPanel():""}</div>`:""}
     </div>`;
   }
@@ -341,7 +327,6 @@ function renderContent(){
 function setScore(matchId,side,val){
   const mt=myTips().matchTips; if(!mt[matchId])mt[matchId]={h:"",a:""};
   mt[matchId][side]=val===""?"":Math.max(0,parseInt(val)||0);
-  // Punkte-Pill live aktualisieren wäre Re-render; wir speichern und lassen Anzeige beim Tabwechsel folgen
   queueSave(saveTips);
 }
 function setChampion(v){myTips().championTip=v;queueSave(saveTips);}
@@ -349,26 +334,26 @@ function setTopScorer(v){myTips().topScorer=v;queueSave(saveTips);}
 function setFun(id,v){myTips().funTips[id]=v;queueSave(saveTips);}
 
 function toggleAdmin(){adminMode=!adminMode;renderContent();}
+function promptOverride(matchId){
+  const m=SCHEDULE.find(x=>x.id===matchId); if(!m)return;
+  const cur=state.results.overrides?.[matchId];
+  const def=cur?`${cur.h}:${cur.a}`:(m.result?`${m.result.h}:${m.result.a}`:"");
+  const inp=window.prompt(`Ergebnis ${m.home} : ${m.away}\nFormat z.B. 2:1 (leer lassen = Override entfernen)`,def);
+  if(inp===null)return;
+  if(!state.results.overrides)state.results.overrides={};
+  if(inp.trim()===""){delete state.results.overrides[matchId];}
+  else{
+    const mm=inp.match(/(\d+)\s*[:\-]\s*(\d+)/);
+    if(!mm){alert("Bitte im Format 2:1 eingeben.");return;}
+    state.results.overrides[matchId]={h:+mm[1],a:+mm[2]};
+  }
+  renderContent();queueSave(saveResults);
+}
+
 function adminPanel(){
   return `<div style="margin-top:16px">
-    <div class="sub" style="margin-bottom:12px">Echte Ergebnisse eintragen:</div>
-    <div class="matchday-nav">
-      ${[1,2,3].map(d=>`<button class="mdbtn ${curDay===d?"active":""}" onclick="setDay(${d})">Spieltag ${d}</button>`).join("")}
-    </div>
-    ${Object.keys(GROUPS).map(g=>{
-      const ms=MATCHDAYS[curDay].filter(m=>m.group===g);
-      return `<div class="card" style="padding:12px"><div style="font-weight:700;margin-bottom:6px">Gruppe ${g}</div>
-      ${ms.map(m=>{
-        const r=state.results.matches?.[m.id]||{h:"",a:""};
-        return `<div class="match">
-          <span class="team-h">${m.home} ${FLAG[m.home]||""}</span>
-          <input class="scorein" type="number" min="0" value="${r.h}" oninput="setReal('${m.id}','h',this.value)">
-          <span class="vs">:</span>
-          <input class="scorein" type="number" min="0" value="${r.a}" oninput="setReal('${m.id}','a',this.value)">
-          <span class="team-a">${FLAG[m.away]||""} ${m.away}</span>
-        </div>`;
-      }).join("")}</div>`;
-    }).join("")}
+    <div class="sub" style="margin-bottom:12px">Ergebnisse einzelner Spiele überschreibst du direkt im Tab „⚽ Spiele"
+      (dort erscheint im Spielleiter-Modus unter jedem Spiel „Ergebnis manuell setzen"). Hier trägst du die Extras ein:</div>
     <div class="card" style="padding:12px">
       <div style="font-weight:700;margin-bottom:6px">🏆 Weltmeister</div>
       <select onchange="setRealField('champion',this.value)">
@@ -385,12 +370,6 @@ function adminPanel(){
         <input value="${state.results["fun_"+fq.id]||""}" oninput="setRealField('fun_${fq.id}',this.value)"
           style="font-size:13px;padding:8px"></div>`).join("")}
     </div></div>`;
-}
-function setReal(matchId,side,val){
-  if(!state.results.matches)state.results.matches={};
-  if(!state.results.matches[matchId])state.results.matches[matchId]={h:"",a:""};
-  state.results.matches[matchId][side]=val===""?"":Math.max(0,parseInt(val)||0);
-  queueSave(saveResults);
 }
 function setRealField(k,v){state.results[k]=v;queueSave(saveResults);}
 
