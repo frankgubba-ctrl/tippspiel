@@ -1,0 +1,9 @@
+[build]
+  publish = "."
+  functions = "netlify/functions"
+
+# Schöne, kurze Adresse für die Funktion: /api/tipps statt /.netlify/functions/tipps
+[[redirects]]
+  from = "/api/tipps"
+  to = "/.netlify/functions/tipps"
+  status = 200

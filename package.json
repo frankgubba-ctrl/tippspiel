@@ -1,0 +1,9 @@
+{
+  "name": "wm-tippspiel",
+  "version": "1.0.0",
+  "description": "WM 2026 Tippspiel Papa vs. Elisa",
+  "type": "module",
+  "dependencies": {
+    "@netlify/blobs": "^8.1.0"
+  }
+}

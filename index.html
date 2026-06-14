@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>⚽ WM 2026 Tippspiel · Papa vs. Elisa</title>
+<style>
+  :root{
+    --bg:#0a1a2f; --card:#11253f; --accent:#fab919; --accent2:#2364aa;
+    --text:#f4f7fb; --sub:#9db4cf; --line:#1d3a5c; --win:#16c79a; --danger:#5c1d28;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--text);
+    font-family:system-ui,-apple-system,sans-serif;padding:16px 14px 60px}
+  .wrap{max-width:560px;margin:0 auto}
+  .center{text-align:center}
+  .card{background:var(--card);border-radius:16px;padding:18px;margin-bottom:16px;border:1px solid var(--line)}
+  .title{font-size:34px;font-weight:900;letter-spacing:-1px}
+  .sub{color:var(--sub);font-size:13px}
+  button{font-family:inherit}
+  .tab{padding:8px 14px;border-radius:10px;border:none;cursor:pointer;font-weight:700;font-size:14px;
+    background:var(--line);color:var(--sub);transition:all .15s}
+  .tab.active{background:var(--accent);color:#0a1a2f}
+  .row{display:flex;align-items:center;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--line)}
+  .rankbtn{width:30px;height:30px;border-radius:8px;border:none;cursor:pointer;font-weight:800;font-size:13px;
+    background:var(--line);color:var(--sub)}
+  .rankbtn.top{background:var(--win);color:#fff}
+  .rankbtn.low{background:var(--accent2);color:#fff}
+  select,input{width:100%;padding:12px;border-radius:10px;background:var(--line);color:var(--text);
+    border:none;font-size:15px}
+  .big{font-size:30px;font-weight:900;color:var(--accent)}
+  .label{color:var(--sub);font-size:13px;font-weight:600}
+  .save{font-size:11px;font-weight:600;margin-top:6px}
+  .hidden{display:none}
+  .pillbtn{flex:1;padding:10px;border-radius:10px;border:none;cursor:pointer;font-weight:800;font-size:15px;
+    background:var(--line);color:var(--sub)}
+  .pillbtn.active{background:var(--accent);color:#0a1a2f}
+  .gold{color:var(--accent)}
+  .login-box{max-width:360px;margin:60px auto 0}
+  .primary{width:100%;padding:14px;border-radius:12px;border:none;cursor:pointer;
+    font-weight:800;font-size:16px;background:var(--accent);color:#0a1a2f;margin-top:12px}
+  .err{color:#ffb3b3;font-size:13px;margin-top:8px;min-height:18px}
+</style>
+</head>
+<body>
+<div class="wrap" id="app">Lädt…</div>
+
+<script>
+// ─────────────────────────────────────────────────────────────
+//  DATEN
+// ─────────────────────────────────────────────────────────────
+const GROUPS = {
+  A:["Mexiko","Südkorea","Südafrika","Tschechien"],
+  B:["Kanada","Schweiz","Katar","Bosnien-Herzegowina"],
+  C:["Brasilien","Marokko","Schottland","Haiti"],
+  D:["USA","Australien","Türkei","Paraguay"],
+  E:["Deutschland","Ecuador","Elfenbeinküste","Curaçao"],
+  F:["Niederlande","Japan","Schweden","Tunesien"],
+  G:["Belgien","Iran","Ägypten","Neuseeland"],
+  H:["Spanien","Uruguay","Saudi-Arabien","Kap Verde"],
+  I:["Frankreich","Senegal","Norwegen","Irak"],
+  J:["Argentinien","Österreich","Algerien","Jordanien"],
+  K:["Portugal","Kolumbien","Usbekistan","DR Kongo"],
+  L:["England","Kroatien","Ghana","Curaçao"],
+};
+const FLAG={Mexiko:"🇲🇽",Südkorea:"🇰🇷",Südafrika:"🇿🇦",Tschechien:"🇨🇿",Kanada:"🇨🇦",Schweiz:"🇨🇭",Katar:"🇶🇦","Bosnien-Herzegowina":"🇧🇦",Brasilien:"🇧🇷",Marokko:"🇲🇦",Schottland:"🏴󠁧󠁢󠁳󠁣󠁴󠁿",Haiti:"🇭🇹",USA:"🇺🇸",Australien:"🇦🇺",Türkei:"🇹🇷",Paraguay:"🇵🇾",Deutschland:"🇩🇪",Ecuador:"🇪🇨",Elfenbeinküste:"🇨🇮",Curaçao:"🇨🇼",Niederlande:"🇳🇱",Japan:"🇯🇵",Schweden:"🇸🇪",Tunesien:"🇹🇳",Belgien:"🇧🇪",Iran:"🇮🇷",Ägypten:"🇪🇬",Neuseeland:"🇳🇿",Spanien:"🇪🇸",Uruguay:"🇺🇾","Saudi-Arabien":"🇸🇦","Kap Verde":"🇨🇻",Frankreich:"🇫🇷",Senegal:"🇸🇳",Norwegen:"🇳🇴",Irak:"🇮🇶",Argentinien:"🇦🇷",Österreich:"🇦🇹",Algerien:"🇩🇿",Jordanien:"🇯🇴",Portugal:"🇵🇹",Kolumbien:"🇨🇴",Usbekistan:"🇺🇿","DR Kongo":"🇨🇩",England:"🏴󠁧󠁢󠁥󠁮󠁧󠁿",Kroatien:"🇭🇷",Ghana:"🇬🇭"};
+const ALL_TEAMS=[...new Set(Object.values(GROUPS).flat())].sort();
+const FUN=[
+  {id:"f1",q:"Welches Team kassiert das erste Eigentor des Turniers? 🤦",type:"team"},
+  {id:"f2",q:"Wie viele rote Karten gibt es im Finale? 🟥",type:"number"},
+  {id:"f3",q:"Welcher Trainer fliegt als Erster vor Wut aus seinem Anzug? 👔🔥",type:"text"},
+  {id:"f4",q:"Welches Maskottchen ist am peinlichsten? 🦊",type:"text"},
+  {id:"f5",q:"In welcher Minute fällt das schnellste Tor des Turniers? ⚡",type:"number"},
+  {id:"f6",q:"Welcher Spieler weint zuerst vor laufender Kamera? 😭",type:"text"},
+  {id:"f7",q:"Wie oft sagt der Kommentator 'unfassbar'? 🎙️",type:"number"},
+  {id:"f8",q:"Welches Team hat die schönsten Trikots? 👕✨",type:"team"},
+  {id:"f9",q:"Wer verschießt im Elfmeterschießen am dramatischsten? 💔",type:"text"},
+  {id:"f10",q:"Welche Nationalhymne wird am lautesten mitgesungen? 🎵",type:"team"},
+];
+
+// ─────────────────────────────────────────────────────────────
+//  ZUSTAND
+// ─────────────────────────────────────────────────────────────
+let me = null;        // "Papa" oder "Elisa"
+let secret = "";      // Geheimwort
+let state = { tips:{}, results:{} };  // vom Server geladen
+let tab = "gruppen";
+let viewPlayer = "Papa";  // wessen Tipps werden gerade angezeigt
+let adminMode = false;
+let saveTimer = null;
+
+const API = "/api/tipps";
+
+// Bequemer Zugriff auf meine eigenen Tipps
+function myTips(){
+  if(!state.tips[me]) state.tips[me] = {groupTips:{},championTip:"",topScorer:"",funTips:{}};
+  return state.tips[me];
+}
+
+// ─────────────────────────────────────────────────────────────
+//  SERVER: laden + speichern
+// ─────────────────────────────────────────────────────────────
+async function loadState(){
+  try{
+    const r = await fetch(API);
+    state = await r.json();
+    if(!state.tips) state.tips={};
+    if(!state.results) state.results={};
+  }catch(e){ console.error(e); }
+}
+
+let saving=false;
+async function saveTips(){
+  saving=true; renderSaveStatus();
+  try{
+    await fetch(API,{method:"POST",headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({player:me,secret,tips:myTips()})});
+  }catch(e){ console.error(e); }
+  saving=false; renderSaveStatus();
+}
+async function saveResults(){
+  saving=true; renderSaveStatus();
+  try{
+    await fetch(API,{method:"POST",headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({player:me,secret,mode:"results",results:state.results})});
+  }catch(e){ console.error(e); }
+  saving=false; renderSaveStatus();
+}
+function queueSave(fn){
+  clearTimeout(saveTimer);
+  saveTimer=setTimeout(fn,500);
+}
+
+// ─────────────────────────────────────────────────────────────
+//  PUNKTE
+// ─────────────────────────────────────────────────────────────
+function score(player){
+  const t = state.tips[player]; if(!t) return 0;
+  let pts=0;
+  Object.keys(GROUPS).forEach(g=>{
+    const real=state.results["group_"+g], tip=t.groupTips?.[g];
+    if(real&&tip){Object.keys(tip).forEach(team=>{
+      if(real[team]===tip[team])pts+=3;
+      else if(real[team]<=2&&tip[team]<=2)pts+=1;
+    });}
+  });
+  if(state.results.champion&&t.championTip===state.results.champion)pts+=10;
+  if(state.results.topScorer&&t.topScorer&&
+     t.topScorer.toLowerCase().trim()===state.results.topScorer.toLowerCase().trim())pts+=8;
+  FUN.forEach(fq=>{
+    const r=state.results["fun_"+fq.id], v=t.funTips?.[fq.id];
+    if(r&&v&&String(r).toLowerCase().trim()===String(v).toLowerCase().trim())pts+=5;
+  });
+  return pts;
+}
+
+// ─────────────────────────────────────────────────────────────
+//  RENDER
+// ─────────────────────────────────────────────────────────────
+const app=()=>document.getElementById("app");
+
+function renderLogin(err=""){
+  app().innerHTML=`
+    <div class="center"><div class="title">⚽ WM 2026</div>
+      <div class="gold" style="font-weight:800;font-size:18px;margin-top:-4px">Tippspiel</div>
+      <div class="sub" style="margin-top:4px">Papa vs. Elisa · 🇺🇸🇨🇦🇲🇽</div></div>
+    <div class="card login-box">
+      <div class="label" style="margin-bottom:6px">Wer bist du?</div>
+      <select id="who"><option value="Papa">👨 Papa</option><option value="Elisa">👧 Elisa</option></select>
+      <div class="label" style="margin:12px 0 6px">Dein Geheimwort</div>
+      <input id="pw" type="password" placeholder="Geheimwort eingeben" />
+      <button class="primary" onclick="doLogin()">Los geht's →</button>
+      <div class="err">${err}</div>
+    </div>`;
+}
+
+async function doLogin(){
+  me=document.getElementById("who").value;
+  secret=document.getElementById("pw").value;
+  // Login testen: einen harmlosen Speicher-Versuch mit aktuellen (geladenen) Tipps
+  await loadState();
+  const test=await fetch(API,{method:"POST",headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({player:me,secret,tips:myTips()})});
+  if(test.status===401){ renderLogin("Falsches Geheimwort. Nochmal versuchen."); return; }
+  viewPlayer=me;
+  renderApp();
+}
+
+function renderSaveStatus(){
+  const el=document.getElementById("savestatus");
+  if(el){el.textContent=saving?"💾 speichert…":"✅ gespeichert";
+    el.style.color=saving?"var(--accent)":"var(--win)";}
+}
+
+function renderApp(){
+  app().innerHTML=`
+  <div class="center" style="margin-bottom:18px">
+    <div class="title">⚽ WM 2026</div>
+    <div class="gold" style="font-weight:800;font-size:18px;margin-top:-4px">Tippspiel</div>
+    <div class="sub" style="margin-top:4px">Angemeldet als ${me==="Papa"?"👨 Papa":"👧 Elisa"} · 11. Juni – 19. Juli</div>
+    <div class="save" id="savestatus">✅ gespeichert</div>
+  </div>
+  <div class="card" style="display:flex;justify-content:space-around;text-align:center">
+    ${["Papa","Elisa"].map(p=>`<div>
+      <div class="label">${p==="Papa"?"👨 Papa":"👧 Elisa"}</div>
+      <div class="big">${score(p)}</div><div class="sub">Punkte</div></div>`).join("")}
+  </div>
+  <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;justify-content:center">
+    ${[["gruppen","📋 Gruppen"],["spezial","🏆 Spezial"],["fun","😂 Lustig"],["regeln","ℹ️ Regeln"]]
+      .map(([k,l])=>`<button class="tab ${tab===k?"active":""}" onclick="setTab('${k}')">${l}</button>`).join("")}
+  </div>
+  <div id="content"></div>`;
+  renderContent();
+}
+
+function setTab(t){tab=t;renderApp();}
+function setView(p){viewPlayer=p;renderContent();}
+
+function playerSwitch(){
+  // Man sieht standardmäßig die eigenen Tipps. Die des anderen erst,
+  // wenn dessen Felder gesperrt angezeigt werden (read-only).
+  return `<div style="display:flex;gap:8px;margin-bottom:14px">
+    ${["Papa","Elisa"].map(p=>`<button class="pillbtn ${viewPlayer===p?"active":""}" onclick="setView('${p}')">
+      ${p==="Papa"?"👨 ":"👧 "}${p}</button>`).join("")}
+  </div>`;
+}
+
+function renderContent(){
+  const c=document.getElementById("content"); if(!c)return;
+  const readonly = viewPlayer!==me;  // fremde Tipps nur ansehen, nicht ändern
+
+  if(tab==="gruppen"){
+    c.innerHTML=playerSwitch()+Object.keys(GROUPS).map(g=>`
+      <div class="card"><div style="font-weight:800;margin-bottom:10px;font-size:16px">Gruppe ${g}</div>
+      ${GROUPS[g].map(team=>{
+        const r=state.tips[viewPlayer]?.groupTips?.[g]?.[team];
+        return `<div class="row"><span style="font-size:15px">${FLAG[team]||"🏳️"} ${team}</span>
+          <div style="display:flex;gap:4px">
+          ${[1,2,3,4].map(n=>`<button class="rankbtn ${r===n?(n<=2?"top":"low"):""}"
+            ${readonly?"disabled style=opacity:.5":""}
+            onclick="setRank('${g}','${team}',${n})">${n}.</button>`).join("")}
+          </div></div>`;}).join("")}
+      <div class="sub" style="margin-top:8px">exakter Platz = 3 Pkt · beide Top-2 = 1 Pkt</div></div>`).join("");
+  }
+
+  if(tab==="spezial"){
+    const t=state.tips[viewPlayer]||{};
+    c.innerHTML=playerSwitch()+`
+      <div class="card"><div style="font-weight:800;margin-bottom:6px">🏆 Weltmeister (10 Pkt)</div>
+        <select ${readonly?"disabled":""} onchange="setChampion(this.value)">
+          <option value="">— Team wählen —</option>
+          ${ALL_TEAMS.map(x=>`<option ${t.championTip===x?"selected":""} value="${x}">${FLAG[x]||""} ${x}</option>`).join("")}
+        </select></div>
+      <div class="card"><div style="font-weight:800;margin-bottom:6px">👟 Torschützenkönig (8 Pkt)</div>
+        <input ${readonly?"disabled":""} value="${t.topScorer||""}" placeholder="z.B. Mbappé"
+          oninput="setTopScorer(this.value)"></div>`;
+  }
+
+  if(tab==="fun"){
+    const t=state.tips[viewPlayer]||{};
+    c.innerHTML=playerSwitch()+FUN.map(fq=>{
+      const v=t.funTips?.[fq.id]||"";
+      const field = fq.type==="team"
+        ? `<select ${readonly?"disabled":""} onchange="setFun('${fq.id}',this.value)">
+             <option value="">— Team wählen —</option>
+             ${ALL_TEAMS.map(x=>`<option ${v===x?"selected":""} value="${x}">${FLAG[x]||""} ${x}</option>`).join("")}
+           </select>`
+        : `<input ${readonly?"disabled":""} type="${fq.type==="number"?"number":"text"}" value="${v}"
+             placeholder="Deine Antwort..." oninput="setFun('${fq.id}',this.value)">`;
+      return `<div class="card"><div style="font-weight:700;margin-bottom:8px;font-size:15px">
+        ${fq.q} <span class="sub">(5 Pkt)</span></div>${field}</div>`;
+    }).join("");
+  }
+
+  if(tab==="regeln"){
+    c.innerHTML=`<div class="card">
+      <div style="font-weight:800;margin-bottom:12px;font-size:17px">📖 So funktioniert's</div>
+      ${[
+        ["📋 Gruppen","Ordne in jeder Gruppe die 4 Teams nach Platz 1–4. Exakter Platz = 3 Punkte, wenn ihr beide ein Team in die Top 2 tippt = 1 Punkt."],
+        ["🏆 Weltmeister","10 Punkte für den richtigen Sieger."],
+        ["👟 Torschützenkönig","8 Punkte für den treffsichersten Spieler."],
+        ["😂 Lustige Fragen","Je 5 Punkte — hier zählt vor allem der Spaß."],
+        ["🔒 Getrennt & sicher","Jeder sieht nur seine eigenen Felder zum Bearbeiten. Die Tipps des anderen kannst du ansehen, aber nicht ändern."],
+        ["⚖️ Spielleiter","Papa trägt nach den Spielen die echten Ergebnisse ein. Dann rechnet die App automatisch."],
+      ].map(([t,d])=>`<div style="margin-bottom:14px"><div style="font-weight:700;color:var(--accent)">${t}</div>
+        <div class="sub" style="font-size:14px;line-height:1.5">${d}</div></div>`).join("")}
+      ${me==="Papa"?`<button class="tab ${adminMode?"active":""}" onclick="toggleAdmin()">
+        ${adminMode?"🔒 Spielleiter-Modus aus":"🔓 Ergebnisse eintragen"}</button>
+        <div id="admin">${adminMode?adminPanel():""}</div>`:""}
+    </div>`;
+  }
+}
+
+// ── Eingabe-Handler ───────────────────────────────────────────
+function setRank(g,team,n){
+  const gt=myTips().groupTips; if(!gt[g])gt[g]={};
+  Object.keys(gt[g]).forEach(t=>{if(gt[g][t]===n&&t!==team)delete gt[g][t];});
+  gt[g][team]=n; renderContent(); queueSave(saveTips);
+}
+function setChampion(v){myTips().championTip=v;queueSave(saveTips);}
+function setTopScorer(v){myTips().topScorer=v;queueSave(saveTips);}
+function setFun(id,v){myTips().funTips[id]=v;queueSave(saveTips);}
+
+function toggleAdmin(){adminMode=!adminMode;renderContent();}
+function adminPanel(){
+  return `<div style="margin-top:16px">
+    <div class="sub" style="margin-bottom:12px">Echte Endplatzierungen & Ergebnisse eintragen:</div>
+    ${Object.keys(GROUPS).map(g=>`<div class="card" style="padding:12px">
+      <div style="font-weight:700;margin-bottom:6px">Gruppe ${g} — echtes Ergebnis</div>
+      ${GROUPS[g].map(team=>{
+        const r=state.results["group_"+g]?.[team];
+        return `<div class="row" style="border:none"><span style="font-size:14px">${FLAG[team]||"🏳️"} ${team}</span>
+          <div style="display:flex;gap:4px">
+          ${[1,2,3,4].map(n=>`<button class="rankbtn ${r===n?"top":""}"
+            onclick="setReal('${g}','${team}',${n})">${n}</button>`).join("")}</div></div>`;}).join("")}
+      </div>`).join("")}
+    <div class="card" style="padding:12px">
+      <div style="font-weight:700;margin-bottom:6px">🏆 Weltmeister</div>
+      <select onchange="setRealField('champion',this.value)">
+        <option value="">—</option>
+        ${ALL_TEAMS.map(x=>`<option ${state.results.champion===x?"selected":""} value="${x}">${x}</option>`).join("")}
+      </select>
+      <div style="font-weight:700;margin:12px 0 6px">👟 Torschützenkönig</div>
+      <input value="${state.results.topScorer||""}" oninput="setRealField('topScorer',this.value)">
+    </div>
+    <div class="card" style="padding:12px">
+      <div style="font-weight:700;margin-bottom:8px">😂 Lustige Fragen — Auflösung</div>
+      ${FUN.map(fq=>`<div style="margin-bottom:8px">
+        <div class="sub" style="font-size:12px;margin-bottom:2px">${fq.q}</div>
+        <input value="${state.results["fun_"+fq.id]||""}" oninput="setRealField('fun_${fq.id}',this.value)"
+          style="font-size:13px;padding:8px"></div>`).join("")}
+    </div></div>`;
+}
+function setReal(g,team,n){
+  const k="group_"+g; if(!state.results[k])state.results[k]={};
+  Object.keys(state.results[k]).forEach(t=>{if(state.results[k][t]===n&&t!==team)delete state.results[k][t];});
+  state.results[k][team]=n; renderContent(); queueSave(saveResults);
+}
+function setRealField(k,v){state.results[k]=v;queueSave(saveResults);}
+
+// ── Start ─────────────────────────────────────────────────────
+renderLogin();
+</script>
+</body>
+</html>
