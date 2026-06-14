@@ -2,7 +2,6 @@
   publish = "."
   functions = "."
 
-# Kurze Adressen für die Funktionen
 [[redirects]]
   from = "/api/tipps"
   to = "/.netlify/functions/tipps"
