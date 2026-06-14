@@ -1,6 +1,6 @@
 [build]
   publish = "."
-  functions = "netlify/functions"
+  functions = "."
 
 # Kurze Adressen für die Funktionen
 [[redirects]]
