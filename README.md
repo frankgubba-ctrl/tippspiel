@@ -67,7 +67,12 @@ Damit das Login funktioniert, musst du zwei Geheimwörter hinterlegen:
 
 1. Öffnet die Netlify-Adresse auf euren Geräten.
 2. Jeder wählt seinen Namen, gibt sein Geheimwort ein → **Los geht's**.
-3. Tippt eure Gruppen, Spezial- und lustigen Fragen. Alles speichert automatisch.
+3. Tippt jedes einzelne Spiel (genaues Ergebnis, z.B. 2:1), dazu die Spezial- und
+   lustigen Fragen. Alles speichert automatisch.
+
+   **Punkte pro Spiel:** 4 = exaktes Ergebnis · 3 = richtige Tordifferenz ·
+   2 = richtige Tendenz (Sieger/Unentschieden) · 0 = daneben.
+   Die Spiele sind nach **Spieltag 1/2/3** und Gruppe sortiert.
 4. **Papa** sieht unter **Regeln** zusätzlich den Knopf **"Ergebnisse eintragen"** —
    damit trägst du nach den Spielen die echten Resultate ein, und die Punkte
    werden automatisch berechnet.

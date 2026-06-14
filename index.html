@@ -40,6 +40,22 @@
   .primary{width:100%;padding:14px;border-radius:12px;border:none;cursor:pointer;
     font-weight:800;font-size:16px;background:var(--accent);color:#0a1a2f;margin-top:12px}
   .err{color:#ffb3b3;font-size:13px;margin-top:8px;min-height:18px}
+  /* Spiel-Zeile */
+  .match{display:flex;align-items:center;gap:8px;padding:10px 0;border-bottom:1px solid var(--line)}
+  .team-h{flex:1;text-align:right;font-size:14px}
+  .team-a{flex:1;text-align:left;font-size:14px}
+  .scorein{width:46px;min-width:46px;text-align:center;padding:10px 4px;font-size:17px;font-weight:800}
+  .vs{color:var(--sub);font-size:12px}
+  .pts{font-size:11px;font-weight:700;margin-left:6px;padding:2px 6px;border-radius:6px}
+  .pts.hit4{background:var(--win);color:#062}
+  .pts.hit3{background:#3a8;color:#fff}
+  .pts.hit2{background:var(--accent2);color:#fff}
+  .pts.hit0{background:var(--line);color:var(--sub)}
+  .matchday-nav{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px;justify-content:center}
+  .mdbtn{padding:7px 11px;border-radius:9px;border:none;cursor:pointer;font-weight:700;font-size:13px;
+    background:var(--line);color:var(--sub)}
+  .mdbtn.active{background:var(--accent);color:#0a1a2f}
+  .res{font-size:11px;color:var(--sub);text-align:center;margin-top:2px}
 </style>
 </head>
 <body>
@@ -78,72 +94,92 @@ const FUN=[
   {id:"f10",q:"Welche Nationalhymne wird am lautesten mitgesungen? 🎵",type:"team"},
 ];
 
+// ── Spielplan automatisch erzeugen ────────────────────────────
+// In jeder 4er-Gruppe spielt jeder gegen jeden = 6 Spiele.
+// Reihenfolge der Paarungen pro Spieltag (Standard-Turnierschema):
+//   Spieltag 1: 1-2, 3-4
+//   Spieltag 2: 1-3, 4-2   (bzw. 2-4)
+//   Spieltag 3: 4-1, 2-3   (bzw. 1-4)
+const PAIRINGS=[ [[0,1],[2,3]], [[0,2],[3,1]], [[3,0],[1,2]] ];
+const MATCHES=[];  // {id, group, day, home, away}
+Object.keys(GROUPS).forEach(g=>{
+  const t=GROUPS[g];
+  PAIRINGS.forEach((day,di)=>{
+    day.forEach(([h,a])=>{
+      MATCHES.push({
+        id:`${g}_${di+1}_${t[h]}_${t[a]}`.replace(/\s/g,""),
+        group:g, day:di+1, home:t[h], away:t[a]
+      });
+    });
+  });
+});
+// Nach Spieltag gruppieren
+const MATCHDAYS={1:[],2:[],3:[]};
+MATCHES.forEach(m=>MATCHDAYS[m.day].push(m));
+
 // ─────────────────────────────────────────────────────────────
 //  ZUSTAND
 // ─────────────────────────────────────────────────────────────
-let me = null;        // "Papa" oder "Elisa"
-let secret = "";      // Geheimwort
-let state = { tips:{}, results:{} };  // vom Server geladen
-let tab = "gruppen";
-let viewPlayer = "Papa";  // wessen Tipps werden gerade angezeigt
-let adminMode = false;
-let saveTimer = null;
+let me=null, secret="", tab="spiele", viewPlayer="Papa", adminMode=false, saveTimer=null;
+let curDay=1;
+let state={ tips:{}, results:{} };
+const API="/api/tipps";
 
-const API = "/api/tipps";
-
-// Bequemer Zugriff auf meine eigenen Tipps
 function myTips(){
-  if(!state.tips[me]) state.tips[me] = {groupTips:{},championTip:"",topScorer:"",funTips:{}};
+  if(!state.tips[me]) state.tips[me]={matchTips:{},groupTips:{},championTip:"",topScorer:"",funTips:{}};
+  if(!state.tips[me].matchTips) state.tips[me].matchTips={};
   return state.tips[me];
 }
 
 // ─────────────────────────────────────────────────────────────
-//  SERVER: laden + speichern
+//  SERVER
 // ─────────────────────────────────────────────────────────────
 async function loadState(){
   try{
-    const r = await fetch(API);
-    state = await r.json();
-    if(!state.tips) state.tips={};
-    if(!state.results) state.results={};
-  }catch(e){ console.error(e); }
+    const r=await fetch(API); state=await r.json();
+    if(!state.tips)state.tips={}; if(!state.results)state.results={};
+  }catch(e){console.error(e);}
 }
-
 let saving=false;
 async function saveTips(){
-  saving=true; renderSaveStatus();
-  try{
-    await fetch(API,{method:"POST",headers:{"Content-Type":"application/json"},
-      body:JSON.stringify({player:me,secret,tips:myTips()})});
-  }catch(e){ console.error(e); }
-  saving=false; renderSaveStatus();
+  saving=true;renderSaveStatus();
+  try{await fetch(API,{method:"POST",headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({player:me,secret,tips:myTips()})});}catch(e){console.error(e);}
+  saving=false;renderSaveStatus();
 }
 async function saveResults(){
-  saving=true; renderSaveStatus();
-  try{
-    await fetch(API,{method:"POST",headers:{"Content-Type":"application/json"},
-      body:JSON.stringify({player:me,secret,mode:"results",results:state.results})});
-  }catch(e){ console.error(e); }
-  saving=false; renderSaveStatus();
+  saving=true;renderSaveStatus();
+  try{await fetch(API,{method:"POST",headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({player:me,secret,mode:"results",results:state.results})});}catch(e){console.error(e);}
+  saving=false;renderSaveStatus();
 }
-function queueSave(fn){
-  clearTimeout(saveTimer);
-  saveTimer=setTimeout(fn,500);
-}
+function queueSave(fn){clearTimeout(saveTimer);saveTimer=setTimeout(fn,500);}
 
 // ─────────────────────────────────────────────────────────────
 //  PUNKTE
 // ─────────────────────────────────────────────────────────────
+// Einzelspiel: exakt = 4, richtige Tordifferenz = 3, richtige Tendenz = 2
+function matchPoints(tip, real){
+  if(!tip||!real)return null;
+  if(tip.h===""||tip.a===""||real.h===""||real.a===""||
+     tip.h==null||tip.a==null||real.h==null||real.a==null) return null;
+  const th=+tip.h, ta=+tip.a, rh=+real.h, ra=+real.a;
+  if([th,ta,rh,ra].some(isNaN))return null;
+  if(th===rh&&ta===ra)return 4;                       // exakt
+  if((th-ta)===(rh-ra))return 3;                      // gleiche Differenz (inkl. Unentschieden gleicher Höhe)
+  const sign=x=>x>0?1:x<0?-1:0;
+  if(sign(th-ta)===sign(rh-ra))return 2;              // gleiche Tendenz
+  return 0;
+}
 function score(player){
-  const t = state.tips[player]; if(!t) return 0;
+  const t=state.tips[player]; if(!t)return 0;
   let pts=0;
-  Object.keys(GROUPS).forEach(g=>{
-    const real=state.results["group_"+g], tip=t.groupTips?.[g];
-    if(real&&tip){Object.keys(tip).forEach(team=>{
-      if(real[team]===tip[team])pts+=3;
-      else if(real[team]<=2&&tip[team]<=2)pts+=1;
-    });}
+  // Einzelspiele
+  MATCHES.forEach(m=>{
+    const p=matchPoints(t.matchTips?.[m.id], state.results.matches?.[m.id]);
+    if(p!=null)pts+=p;
   });
+  // Spezial
   if(state.results.champion&&t.championTip===state.results.champion)pts+=10;
   if(state.results.topScorer&&t.topScorer&&
      t.topScorer.toLowerCase().trim()===state.results.topScorer.toLowerCase().trim())pts+=8;
@@ -173,25 +209,20 @@ function renderLogin(err=""){
       <div class="err">${err}</div>
     </div>`;
 }
-
 async function doLogin(){
   me=document.getElementById("who").value;
   secret=document.getElementById("pw").value;
-  // Login testen: einen harmlosen Speicher-Versuch mit aktuellen (geladenen) Tipps
   await loadState();
   const test=await fetch(API,{method:"POST",headers:{"Content-Type":"application/json"},
     body:JSON.stringify({player:me,secret,tips:myTips()})});
-  if(test.status===401){ renderLogin("Falsches Geheimwort. Nochmal versuchen."); return; }
-  viewPlayer=me;
-  renderApp();
+  if(test.status===401){renderLogin("Falsches Geheimwort. Nochmal versuchen.");return;}
+  viewPlayer=me; renderApp();
 }
-
 function renderSaveStatus(){
   const el=document.getElementById("savestatus");
   if(el){el.textContent=saving?"💾 speichert…":"✅ gespeichert";
     el.style.color=saving?"var(--accent)":"var(--win)";}
 }
-
 function renderApp(){
   app().innerHTML=`
   <div class="center" style="margin-bottom:18px">
@@ -206,19 +237,17 @@ function renderApp(){
       <div class="big">${score(p)}</div><div class="sub">Punkte</div></div>`).join("")}
   </div>
   <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;justify-content:center">
-    ${[["gruppen","📋 Gruppen"],["spezial","🏆 Spezial"],["fun","😂 Lustig"],["regeln","ℹ️ Regeln"]]
+    ${[["spiele","⚽ Spiele"],["spezial","🏆 Spezial"],["fun","😂 Lustig"],["regeln","ℹ️ Regeln"]]
       .map(([k,l])=>`<button class="tab ${tab===k?"active":""}" onclick="setTab('${k}')">${l}</button>`).join("")}
   </div>
   <div id="content"></div>`;
   renderContent();
 }
-
 function setTab(t){tab=t;renderApp();}
 function setView(p){viewPlayer=p;renderContent();}
+function setDay(d){curDay=d;renderContent();}
 
 function playerSwitch(){
-  // Man sieht standardmäßig die eigenen Tipps. Die des anderen erst,
-  // wenn dessen Felder gesperrt angezeigt werden (read-only).
   return `<div style="display:flex;gap:8px;margin-bottom:14px">
     ${["Papa","Elisa"].map(p=>`<button class="pillbtn ${viewPlayer===p?"active":""}" onclick="setView('${p}')">
       ${p==="Papa"?"👨 ":"👧 "}${p}</button>`).join("")}
@@ -227,20 +256,37 @@ function playerSwitch(){
 
 function renderContent(){
   const c=document.getElementById("content"); if(!c)return;
-  const readonly = viewPlayer!==me;  // fremde Tipps nur ansehen, nicht ändern
+  const readonly=viewPlayer!==me;
 
-  if(tab==="gruppen"){
-    c.innerHTML=playerSwitch()+Object.keys(GROUPS).map(g=>`
-      <div class="card"><div style="font-weight:800;margin-bottom:10px;font-size:16px">Gruppe ${g}</div>
-      ${GROUPS[g].map(team=>{
-        const r=state.tips[viewPlayer]?.groupTips?.[g]?.[team];
-        return `<div class="row"><span style="font-size:15px">${FLAG[team]||"🏳️"} ${team}</span>
-          <div style="display:flex;gap:4px">
-          ${[1,2,3,4].map(n=>`<button class="rankbtn ${r===n?(n<=2?"top":"low"):""}"
-            ${readonly?"disabled style=opacity:.5":""}
-            onclick="setRank('${g}','${team}',${n})">${n}.</button>`).join("")}
-          </div></div>`;}).join("")}
-      <div class="sub" style="margin-top:8px">exakter Platz = 3 Pkt · beide Top-2 = 1 Pkt</div></div>`).join("");
+  if(tab==="spiele"){
+    const t=state.tips[viewPlayer]||{};
+    c.innerHTML=playerSwitch()+`
+      <div class="matchday-nav">
+        ${[1,2,3].map(d=>`<button class="mdbtn ${curDay===d?"active":""}" onclick="setDay(${d})">Spieltag ${d}</button>`).join("")}
+      </div>`+
+      // nach Gruppen innerhalb des Spieltags
+      Object.keys(GROUPS).map(g=>{
+        const ms=MATCHDAYS[curDay].filter(m=>m.group===g);
+        return `<div class="card"><div style="font-weight:800;margin-bottom:6px;font-size:15px">Gruppe ${g}</div>
+        ${ms.map(m=>{
+          const tip=t.matchTips?.[m.id]||{h:"",a:""};
+          const real=state.results.matches?.[m.id];
+          const p=matchPoints(t.matchTips?.[m.id],real);
+          const pill = real ? (p!=null?`<span class="pts hit${p}">${p} Pkt</span>`:"") : "";
+          const resline = real ? `<div class="res">Endstand: ${real.h}:${real.a} ${pill}</div>` : "";
+          return `<div>
+            <div class="match">
+              <span class="team-h">${m.home} ${FLAG[m.home]||""}</span>
+              <input class="scorein" type="number" min="0" inputmode="numeric" value="${tip.h}"
+                ${readonly?"disabled":""} oninput="setScore('${m.id}','h',this.value)">
+              <span class="vs">:</span>
+              <input class="scorein" type="number" min="0" inputmode="numeric" value="${tip.a}"
+                ${readonly?"disabled":""} oninput="setScore('${m.id}','a',this.value)">
+              <span class="team-a">${FLAG[m.away]||""} ${m.away}</span>
+            </div>${resline}
+          </div>`;
+        }).join("")}</div>`;
+      }).join("");
   }
 
   if(tab==="spezial"){
@@ -260,7 +306,7 @@ function renderContent(){
     const t=state.tips[viewPlayer]||{};
     c.innerHTML=playerSwitch()+FUN.map(fq=>{
       const v=t.funTips?.[fq.id]||"";
-      const field = fq.type==="team"
+      const field=fq.type==="team"
         ? `<select ${readonly?"disabled":""} onchange="setFun('${fq.id}',this.value)">
              <option value="">— Team wählen —</option>
              ${ALL_TEAMS.map(x=>`<option ${v===x?"selected":""} value="${x}">${FLAG[x]||""} ${x}</option>`).join("")}
@@ -276,11 +322,11 @@ function renderContent(){
     c.innerHTML=`<div class="card">
       <div style="font-weight:800;margin-bottom:12px;font-size:17px">📖 So funktioniert's</div>
       ${[
-        ["📋 Gruppen","Ordne in jeder Gruppe die 4 Teams nach Platz 1–4. Exakter Platz = 3 Punkte, wenn ihr beide ein Team in die Top 2 tippt = 1 Punkt."],
+        ["⚽ Spiele tippen","Tippe für jedes Spiel das genaue Ergebnis. <b>4 Punkte</b> für das exakte Ergebnis, <b>3 Punkte</b> für die richtige Tordifferenz, <b>2 Punkte</b> für die richtige Tendenz (Sieger/Unentschieden)."],
         ["🏆 Weltmeister","10 Punkte für den richtigen Sieger."],
         ["👟 Torschützenkönig","8 Punkte für den treffsichersten Spieler."],
         ["😂 Lustige Fragen","Je 5 Punkte — hier zählt vor allem der Spaß."],
-        ["🔒 Getrennt & sicher","Jeder sieht nur seine eigenen Felder zum Bearbeiten. Die Tipps des anderen kannst du ansehen, aber nicht ändern."],
+        ["🔒 Getrennt & sicher","Jeder bearbeitet nur seine eigenen Felder. Die Tipps des anderen kannst du ansehen, aber nicht ändern."],
         ["⚖️ Spielleiter","Papa trägt nach den Spielen die echten Ergebnisse ein. Dann rechnet die App automatisch."],
       ].map(([t,d])=>`<div style="margin-bottom:14px"><div style="font-weight:700;color:var(--accent)">${t}</div>
         <div class="sub" style="font-size:14px;line-height:1.5">${d}</div></div>`).join("")}
@@ -292,10 +338,11 @@ function renderContent(){
 }
 
 // ── Eingabe-Handler ───────────────────────────────────────────
-function setRank(g,team,n){
-  const gt=myTips().groupTips; if(!gt[g])gt[g]={};
-  Object.keys(gt[g]).forEach(t=>{if(gt[g][t]===n&&t!==team)delete gt[g][t];});
-  gt[g][team]=n; renderContent(); queueSave(saveTips);
+function setScore(matchId,side,val){
+  const mt=myTips().matchTips; if(!mt[matchId])mt[matchId]={h:"",a:""};
+  mt[matchId][side]=val===""?"":Math.max(0,parseInt(val)||0);
+  // Punkte-Pill live aktualisieren wäre Re-render; wir speichern und lassen Anzeige beim Tabwechsel folgen
+  queueSave(saveTips);
 }
 function setChampion(v){myTips().championTip=v;queueSave(saveTips);}
 function setTopScorer(v){myTips().topScorer=v;queueSave(saveTips);}
@@ -304,16 +351,24 @@ function setFun(id,v){myTips().funTips[id]=v;queueSave(saveTips);}
 function toggleAdmin(){adminMode=!adminMode;renderContent();}
 function adminPanel(){
   return `<div style="margin-top:16px">
-    <div class="sub" style="margin-bottom:12px">Echte Endplatzierungen & Ergebnisse eintragen:</div>
-    ${Object.keys(GROUPS).map(g=>`<div class="card" style="padding:12px">
-      <div style="font-weight:700;margin-bottom:6px">Gruppe ${g} — echtes Ergebnis</div>
-      ${GROUPS[g].map(team=>{
-        const r=state.results["group_"+g]?.[team];
-        return `<div class="row" style="border:none"><span style="font-size:14px">${FLAG[team]||"🏳️"} ${team}</span>
-          <div style="display:flex;gap:4px">
-          ${[1,2,3,4].map(n=>`<button class="rankbtn ${r===n?"top":""}"
-            onclick="setReal('${g}','${team}',${n})">${n}</button>`).join("")}</div></div>`;}).join("")}
-      </div>`).join("")}
+    <div class="sub" style="margin-bottom:12px">Echte Ergebnisse eintragen:</div>
+    <div class="matchday-nav">
+      ${[1,2,3].map(d=>`<button class="mdbtn ${curDay===d?"active":""}" onclick="setDay(${d})">Spieltag ${d}</button>`).join("")}
+    </div>
+    ${Object.keys(GROUPS).map(g=>{
+      const ms=MATCHDAYS[curDay].filter(m=>m.group===g);
+      return `<div class="card" style="padding:12px"><div style="font-weight:700;margin-bottom:6px">Gruppe ${g}</div>
+      ${ms.map(m=>{
+        const r=state.results.matches?.[m.id]||{h:"",a:""};
+        return `<div class="match">
+          <span class="team-h">${m.home} ${FLAG[m.home]||""}</span>
+          <input class="scorein" type="number" min="0" value="${r.h}" oninput="setReal('${m.id}','h',this.value)">
+          <span class="vs">:</span>
+          <input class="scorein" type="number" min="0" value="${r.a}" oninput="setReal('${m.id}','a',this.value)">
+          <span class="team-a">${FLAG[m.away]||""} ${m.away}</span>
+        </div>`;
+      }).join("")}</div>`;
+    }).join("")}
     <div class="card" style="padding:12px">
       <div style="font-weight:700;margin-bottom:6px">🏆 Weltmeister</div>
       <select onchange="setRealField('champion',this.value)">
@@ -331,10 +386,11 @@ function adminPanel(){
           style="font-size:13px;padding:8px"></div>`).join("")}
     </div></div>`;
 }
-function setReal(g,team,n){
-  const k="group_"+g; if(!state.results[k])state.results[k]={};
-  Object.keys(state.results[k]).forEach(t=>{if(state.results[k][t]===n&&t!==team)delete state.results[k][t];});
-  state.results[k][team]=n; renderContent(); queueSave(saveResults);
+function setReal(matchId,side,val){
+  if(!state.results.matches)state.results.matches={};
+  if(!state.results.matches[matchId])state.results.matches[matchId]={h:"",a:""};
+  state.results.matches[matchId][side]=val===""?"":Math.max(0,parseInt(val)||0);
+  queueSave(saveResults);
 }
 function setRealField(k,v){state.results[k]=v;queueSave(saveResults);}
 
