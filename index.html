@@ -18,7 +18,7 @@
   .title{font-size:34px;font-weight:900;letter-spacing:-1px}
   .sub{color:var(--sub);font-size:13px}
   button{font-family:inherit}
-  .tab{padding:8px 14px;border-radius:10px;border:none;cursor:pointer;font-weight:700;font-size:14px;
+  .tab{padding:8px 13px;border-radius:10px;border:none;cursor:pointer;font-weight:700;font-size:13px;
     background:var(--line);color:var(--sub);transition:all .15s}
   .tab.active{background:var(--accent);color:#0a1a2f}
   select,input{width:100%;padding:12px;border-radius:10px;background:var(--line);color:var(--text);
@@ -49,10 +49,12 @@
   .res{font-size:11px;color:var(--sub);text-align:center;margin-top:3px}
   .res b{color:var(--text)}
   .grpnav{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:14px;justify-content:center}
-  .gbtn{width:34px;height:34px;border-radius:9px;border:none;cursor:pointer;font-weight:800;font-size:14px;
+  .gbtn{min-width:34px;height:34px;padding:0 8px;border-radius:9px;border:none;cursor:pointer;font-weight:800;font-size:13px;
     background:var(--line);color:var(--sub)}
   .gbtn.active{background:var(--accent);color:#0a1a2f}
   .override{font-size:11px;color:var(--accent);text-align:center;margin-top:3px;cursor:pointer;text-decoration:underline}
+  .pending{opacity:.55}
+  .pendtag{font-size:11px;color:var(--sub);text-align:center;margin-top:3px;font-style:italic}
 </style>
 </head>
 <body>
@@ -76,24 +78,23 @@ const FUN=[
   {id:"f9",q:"Wer verschießt im Elfmeterschießen am dramatischsten? 💔",type:"text"},
   {id:"f10",q:"Welche Nationalhymne wird am lautesten mitgesungen? 🎵",type:"team"},
 ];
+const KO_ORDER=["Sechzehntelfinale","Achtelfinale","Viertelfinale","Halbfinale","Spiel um Platz 3","Finale"];
 
 // ─────────────────────────────────────────────────────────────
 //  ZUSTAND
 // ─────────────────────────────────────────────────────────────
 let me=null, secret="", tab="spiele", viewPlayer="Papa", adminMode=false, saveTimer=null;
-let curGroup="A";
-let state={ tips:{}, results:{} };   // results.overrides[id]={h,a} (Papa), results.champion, ...
-let SCHEDULE=[];                      // live geladen
-let scheduleErr="";
+let curGroup="A", curRound="Sechzehntelfinale";
+let state={ tips:{}, results:{} };
+let SCHEDULE=[], KO=[], scheduleErr="";
 const API="/api/tipps", SCHED="/api/schedule";
 
 function myTips(){
-  if(!state.tips[me]) state.tips[me]={matchTips:{},championTip:"",topScorer:"",funTips:{}};
-  if(!state.tips[me].matchTips) state.tips[me].matchTips={};
-  if(!state.tips[me].funTips) state.tips[me].funTips={};
-  return state.tips[me];
+  if(!state.tips[me]) state.tips[me]={matchTips:{},koTips:{},championTip:"",topScorer:"",funTips:{}};
+  const t=state.tips[me];
+  if(!t.matchTips)t.matchTips={}; if(!t.koTips)t.koTips={}; if(!t.funTips)t.funTips={};
+  return t;
 }
-// Das tatsächliche Ergebnis: Papas Override hat Vorrang, sonst das automatische aus der Quelle
 function realResult(m){
   const ov=state.results.overrides?.[m.id];
   if(ov && ov.h!=="" && ov.a!=="" && ov.h!=null && ov.a!=null) return {h:+ov.h,a:+ov.a,src:"override"};
@@ -113,7 +114,7 @@ async function loadState(){
 async function loadSchedule(){
   try{
     const r=await fetch(SCHED); const d=await r.json();
-    if(d.matches&&d.matches.length){SCHEDULE=d.matches;scheduleErr="";}
+    if(d.matches&&d.matches.length){SCHEDULE=d.matches;KO=d.ko||[];scheduleErr="";}
     else {scheduleErr="Spielplan konnte nicht geladen werden.";}
   }catch(e){scheduleErr="Spielplan konnte nicht geladen werden.";console.error(e);}
 }
@@ -133,7 +134,7 @@ async function saveResults(){
 function queueSave(fn){clearTimeout(saveTimer);saveTimer=setTimeout(fn,500);}
 
 // ─────────────────────────────────────────────────────────────
-//  PUNKTE  (4 exakt / 3 Differenz / 2 Tendenz)
+//  PUNKTE  (4 exakt / 3 Differenz / 2 Tendenz) – gilt für Gruppen UND K.-o.
 // ─────────────────────────────────────────────────────────────
 function matchPoints(tip, real){
   if(!tip||!real)return null;
@@ -149,17 +150,13 @@ function matchPoints(tip, real){
 function score(player){
   const t=state.tips[player]; if(!t)return 0;
   let pts=0;
-  SCHEDULE.forEach(m=>{
-    const p=matchPoints(t.matchTips?.[m.id], realResult(m));
-    if(p!=null)pts+=p;
-  });
+  SCHEDULE.forEach(m=>{const p=matchPoints(t.matchTips?.[m.id], realResult(m));if(p!=null)pts+=p;});
+  KO.forEach(m=>{const p=matchPoints(t.koTips?.[m.id], realResult(m));if(p!=null)pts+=p;});
   if(state.results.champion&&t.championTip===state.results.champion)pts+=10;
   if(state.results.topScorer&&t.topScorer&&
      t.topScorer.toLowerCase().trim()===state.results.topScorer.toLowerCase().trim())pts+=8;
-  FUN.forEach(fq=>{
-    const r=state.results["fun_"+fq.id], v=t.funTips?.[fq.id];
-    if(r&&v&&String(r).toLowerCase().trim()===String(v).toLowerCase().trim())pts+=5;
-  });
+  FUN.forEach(fq=>{const r=state.results["fun_"+fq.id], v=t.funTips?.[fq.id];
+    if(r&&v&&String(r).toLowerCase().trim()===String(v).toLowerCase().trim())pts+=5;});
   return pts;
 }
 
@@ -211,8 +208,8 @@ function renderApp(){
       <div class="label">${p==="Papa"?"👨 Papa":"👧 Elisa"}</div>
       <div class="big">${score(p)}</div><div class="sub">Punkte</div></div>`).join("")}
   </div>
-  <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;justify-content:center">
-    ${[["spiele","⚽ Spiele"],["spezial","🏆 Spezial"],["fun","😂 Lustig"],["regeln","ℹ️ Regeln"]]
+  <div style="display:flex;gap:6px;margin-bottom:16px;flex-wrap:wrap;justify-content:center">
+    ${[["spiele","⚽ Gruppen"],["finale","🏆 Finale"],["spezial","⭐ Spezial"],["fun","😂 Lustig"],["regeln","ℹ️ Regeln"]]
       .map(([k,l])=>`<button class="tab ${tab===k?"active":""}" onclick="setTab('${k}')">${l}</button>`).join("")}
   </div>
   <div id="content"></div>`;
@@ -221,6 +218,7 @@ function renderApp(){
 function setTab(t){tab=t;renderApp();}
 function setView(p){viewPlayer=p;renderContent();}
 function setGroup(g){curGroup=g;renderContent();}
+function setRound(r){curRound=r;renderContent();}
 
 function playerSwitch(){
   return `<div style="display:flex;gap:8px;margin-bottom:14px">
@@ -228,10 +226,47 @@ function playerSwitch(){
       ${p==="Papa"?"👨 ":"👧 "}${p}</button>`).join("")}
   </div>`;
 }
-function groupNav(){
-  const groups=[...new Set(SCHEDULE.map(m=>m.group))].sort();
-  return `<div class="grpnav">${groups.map(g=>
-    `<button class="gbtn ${curGroup===g?"active":""}" onclick="setGroup('${g}')">${g}</button>`).join("")}</div>`;
+
+// Eine Spiel-Zeile rendern (für Gruppen und K.-o. gemeinsam)
+function matchRow(m, tipObj, readonly, isKO){
+  const tip=tipObj?.[m.id]||{h:"",a:""};
+  const real=realResult(m);
+  const p=matchPoints(tipObj?.[m.id],real);
+  const pill=real&&p!=null?`<span class="pts hit${p}">${p} Pkt</span>`:"";
+  let resline="";
+  if(real){
+    const tag=real.src==="override"?" ✏️":"";
+    resline=`<div class="res">Endstand: <b>${real.h}:${real.a}</b>${tag} ${pill}</div>`;
+  }
+  const setter=isKO?"setKO":"setScore";
+  const pending=isKO&&m.pending;
+  if(pending){
+    return `<div class="match pending">
+      <div class="meta">${m.date} · ${m.time}${m.ground?" · "+m.ground:""}</div>
+      <div class="matchtop">
+        <span class="team-h">${m.home} ${m.homeFlag}</span>
+        <input class="scorein" disabled value="">
+        <span class="vs">:</span>
+        <input class="scorein" disabled value="">
+        <span class="team-a">${m.awayFlag} ${m.away}</span>
+      </div>
+      <div class="pendtag">Teams stehen noch nicht fest – tippbar, sobald ausgelost</div>
+    </div>`;
+  }
+  return `<div class="match">
+    <div class="meta">${m.date} · ${m.time}${m.ground?" · "+m.ground:""}</div>
+    <div class="matchtop">
+      <span class="team-h">${m.home} ${m.homeFlag}</span>
+      <input class="scorein" type="number" min="0" inputmode="numeric" value="${tip.h}"
+        ${readonly?"disabled":""} oninput="${setter}('${m.id}','h',this.value)">
+      <span class="vs">:</span>
+      <input class="scorein" type="number" min="0" inputmode="numeric" value="${tip.a}"
+        ${readonly?"disabled":""} oninput="${setter}('${m.id}','a',this.value)">
+      <span class="team-a">${m.awayFlag} ${m.away}</span>
+    </div>
+    ${resline}
+    ${me==="Papa"&&adminMode?`<div class="override" onclick="promptOverride('${m.id}',${isKO})">Ergebnis manuell setzen/ändern</div>`:""}
+  </div>`;
 }
 
 function renderContent(){
@@ -242,36 +277,25 @@ function renderContent(){
     if(scheduleErr){c.innerHTML=`<div class="card"><div style="color:#ffb3b3">${scheduleErr}</div>
       <div class="sub" style="margin-top:8px">Bitte später neu laden. Deine bisherigen Tipps sind gespeichert.</div></div>`;return;}
     const t=state.tips[viewPlayer]||{};
+    const groups=[...new Set(SCHEDULE.map(m=>m.group))].sort();
     const ms=SCHEDULE.filter(m=>m.group===curGroup);
-    c.innerHTML=playerSwitch()+groupNav()+`<div class="card">
-      <div style="font-weight:800;margin-bottom:6px;font-size:16px">Gruppe ${curGroup}</div>
-      ${ms.map(m=>{
-        const tip=t.matchTips?.[m.id]||{h:"",a:""};
-        const real=realResult(m);
-        const p=matchPoints(t.matchTips?.[m.id],real);
-        const pill=real&&p!=null?`<span class="pts hit${p}">${p} Pkt</span>`:"";
-        let resline="";
-        if(real){
-          const tag=real.src==="override"?" ✏️":"";
-          resline=`<div class="res">Endstand: <b>${real.h}:${real.a}</b>${tag} ${pill}</div>`;
-        }
-        return `<div class="match">
-          <div class="meta">${m.date} · ${m.time}${m.ground?" · "+m.ground:""}</div>
-          <div class="matchtop">
-            <span class="team-h">${m.home} ${m.homeFlag}</span>
-            <input class="scorein" type="number" min="0" inputmode="numeric" value="${tip.h}"
-              ${readonly?"disabled":""} oninput="setScore('${m.id}','h',this.value)">
-            <span class="vs">:</span>
-            <input class="scorein" type="number" min="0" inputmode="numeric" value="${tip.a}"
-              ${readonly?"disabled":""} oninput="setScore('${m.id}','a',this.value)">
-            <span class="team-a">${m.awayFlag} ${m.away}</span>
-          </div>
-          ${resline}
-          ${me==="Papa"&&adminMode?`<div class="override" onclick="promptOverride('${m.id}')">Ergebnis manuell setzen/ändern</div>`:""}
-        </div>`;
-      }).join("")}
-    </div>
-    <div class="sub center" style="margin-top:-6px">Ergebnisse werden automatisch von openfootball geladen. ✏️ = von Papa manuell gesetzt.</div>`;
+    c.innerHTML=playerSwitch()+
+      `<div class="grpnav">${groups.map(g=>`<button class="gbtn ${curGroup===g?"active":""}" onclick="setGroup('${g}')">${g}</button>`).join("")}</div>`+
+      `<div class="card"><div style="font-weight:800;margin-bottom:6px;font-size:16px">Gruppe ${curGroup}</div>
+      ${ms.map(m=>matchRow(m,t.matchTips,readonly,false)).join("")}</div>
+      <div class="sub center" style="margin-top:-6px">Ergebnisse werden automatisch geladen. ✏️ = von Papa manuell gesetzt.</div>`;
+  }
+
+  if(tab==="finale"){
+    if(scheduleErr||!KO.length){c.innerHTML=`<div class="card"><div style="color:#ffb3b3">${scheduleErr||"Finalrunde noch nicht verfügbar."}</div></div>`;return;}
+    const t=state.tips[viewPlayer]||{};
+    const rounds=KO_ORDER.filter(r=>KO.some(m=>m.round===r));
+    const ms=KO.filter(m=>m.round===curRound);
+    c.innerHTML=playerSwitch()+
+      `<div class="grpnav">${rounds.map(r=>`<button class="gbtn ${curRound===r?"active":""}" onclick="setRound('${r}')" style="font-size:11px">${r}</button>`).join("")}</div>`+
+      `<div class="card"><div style="font-weight:800;margin-bottom:6px;font-size:16px">${curRound}</div>
+      ${ms.map(m=>matchRow(m,t.koTips,readonly,true)).join("")}</div>
+      <div class="sub center" style="margin-top:-6px">Tippt das Ergebnis nach 90 Minuten. Gleiche Wertung wie Gruppenspiele (4/3/2).</div>`;
   }
 
   if(tab==="spezial"){
@@ -307,13 +331,13 @@ function renderContent(){
     c.innerHTML=`<div class="card">
       <div style="font-weight:800;margin-bottom:12px;font-size:17px">📖 So funktioniert's</div>
       ${[
-        ["⚽ Spiele tippen","Tippe für jedes Spiel das genaue Ergebnis. <b>4 Punkte</b> exakt · <b>3</b> richtige Tordifferenz · <b>2</b> richtige Tendenz."],
-        ["🔄 Echte Ergebnisse","Die Ergebnisse werden automatisch aus einer öffentlichen Quelle (openfootball) geladen. Datum/Uhrzeit in isländischer Zeit."],
+        ["⚽ Spiele tippen","Tippe jedes Spiel (Gruppen UND Finalrunde). <b>4 Punkte</b> exakt · <b>3</b> richtige Tordifferenz · <b>2</b> richtige Tendenz."],
+        ["🏆 Finalrunde","Vom Sechzehntelfinale bis zum Finale. Getippt wird das Ergebnis nach 90 Minuten. Solange die Teams noch nicht feststehen, sind die Felder gesperrt und schalten sich automatisch frei."],
+        ["🔄 Echte Ergebnisse","Werden automatisch aus einer öffentlichen Quelle (openfootball) geladen. Datum/Uhrzeit in isländischer Zeit."],
         ["🏆 Weltmeister","10 Punkte für den richtigen Sieger."],
         ["👟 Torschützenkönig","8 Punkte für den treffsichersten Spieler."],
         ["😂 Lustige Fragen","Je 5 Punkte — hier zählt vor allem der Spaß."],
-        ["🔒 Getrennt & sicher","Jeder bearbeitet nur seine eigenen Felder. Die Tipps des anderen kannst du ansehen, aber nicht ändern."],
-        ["✏️ Papa als Spielleiter","Falls die automatische Quelle mal hinterherhängt, kann Papa jedes Ergebnis manuell überschreiben."],
+        ["✏️ Papa als Spielleiter","Falls die Quelle mal hinterherhängt, kann Papa jedes Ergebnis manuell überschreiben."],
       ].map(([t,d])=>`<div style="margin-bottom:14px"><div style="font-weight:700;color:var(--accent)">${t}</div>
         <div class="sub" style="font-size:14px;line-height:1.5">${d}</div></div>`).join("")}
       ${me==="Papa"?`<button class="tab ${adminMode?"active":""}" onclick="toggleAdmin()">
@@ -329,13 +353,18 @@ function setScore(matchId,side,val){
   mt[matchId][side]=val===""?"":Math.max(0,parseInt(val)||0);
   queueSave(saveTips);
 }
+function setKO(matchId,side,val){
+  const kt=myTips().koTips; if(!kt[matchId])kt[matchId]={h:"",a:""};
+  kt[matchId][side]=val===""?"":Math.max(0,parseInt(val)||0);
+  queueSave(saveTips);
+}
 function setChampion(v){myTips().championTip=v;queueSave(saveTips);}
 function setTopScorer(v){myTips().topScorer=v;queueSave(saveTips);}
 function setFun(id,v){myTips().funTips[id]=v;queueSave(saveTips);}
 
 function toggleAdmin(){adminMode=!adminMode;renderContent();}
-function promptOverride(matchId){
-  const m=SCHEDULE.find(x=>x.id===matchId); if(!m)return;
+function promptOverride(matchId,isKO){
+  const m=(isKO?KO:SCHEDULE).find(x=>x.id===matchId); if(!m)return;
   const cur=state.results.overrides?.[matchId];
   const def=cur?`${cur.h}:${cur.a}`:(m.result?`${m.result.h}:${m.result.a}`:"");
   const inp=window.prompt(`Ergebnis ${m.home} : ${m.away}\nFormat z.B. 2:1 (leer lassen = Override entfernen)`,def);
@@ -352,7 +381,7 @@ function promptOverride(matchId){
 
 function adminPanel(){
   return `<div style="margin-top:16px">
-    <div class="sub" style="margin-bottom:12px">Ergebnisse einzelner Spiele überschreibst du direkt im Tab „⚽ Spiele"
+    <div class="sub" style="margin-bottom:12px">Ergebnisse einzelner Spiele überschreibst du direkt in den Tabs „⚽ Gruppen" und „🏆 Finale"
       (dort erscheint im Spielleiter-Modus unter jedem Spiel „Ergebnis manuell setzen"). Hier trägst du die Extras ein:</div>
     <div class="card" style="padding:12px">
       <div style="font-weight:700;margin-bottom:6px">🏆 Weltmeister</div>
